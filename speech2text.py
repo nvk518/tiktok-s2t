@@ -7,6 +7,7 @@ import whisper
 from langchain.llms import OpenAI
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+import streamlit as st
 
 # drive.mount('/content/drive')
 
@@ -45,6 +46,7 @@ def obtain_audio(file_path):
 
     # Replace 'output_audio.mp3' with the desired output MP3 file name
     video.audio.write_audiofile("output_audio.wav")
+    st.info("TikTok to audio conversion successful.")
 
 
 def execute_transcription():
@@ -56,7 +58,7 @@ def execute_transcription():
 
     # Get the transcription text
     transcription = result["text"]
-    print(transcription)
+    st.info("Transcription Successful:", transcription[:40])
     return transcription
 
 
@@ -66,7 +68,7 @@ def execute_gpt(text):
     transcribed_text = f"{text}"
 
     prompt = [
-        f"Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city, state, country they are located in: {transcribed_text}. If place name is unclear (ie. the text transcript says Booted In, but could instead be Boudin Bakery in San Francisco), try fixing it. provide what the transcript says was a recommended item. Provide your response in this strict format: 'Name: _, Location: _, Notes: _'"
+        f"Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city, state, country they are located in: {transcribed_text}. Include area as part of location (ie. Shibuya, Dotunburi, etc). If place name is unclear (ie. the text transcript says Booted In, but could instead be Boudin Bakery in San Francisco), try fixing it. provide what the transcript says was a recommended item. Provide your response in this strict format: 'Name: _, Location: _, Notes: _'"
     ]
 
     response = llm.generate(prompt)
@@ -92,6 +94,7 @@ def update_sheet(locations):
         location = split_notes[0]
         notes = split_notes[1]
         rows_to_insert.append([name, location, notes])
+        st.info("Adding location:", name, "-", location)
 
     credentials = service_account.Credentials.from_service_account_file(
         SHEETS_SERVICE_ACCOUNT_FILE
@@ -150,7 +153,6 @@ def update_sheet(locations):
 # text = execute_transcription()
 # locations = execute_gpt(text)
 # update_sheet(locations)
-import streamlit as st
 
 
 def main():
