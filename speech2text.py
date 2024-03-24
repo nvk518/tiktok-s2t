@@ -8,6 +8,8 @@ from langchain.llms import OpenAI
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import streamlit as st
+import io
+import tempfile
 
 # drive.mount('/content/drive')
 
@@ -42,24 +44,36 @@ def download_tiktok(url):
 def obtain_audio(file_path):
 
     # Replace 'your_video.mp4' with the path to your video file
-    video = VideoFileClip(file_path)
+    video_clip = VideoFileClip(file_path)
 
     # Replace 'output_audio.mp3' with the desired output MP3 file name
-    video.audio.write_audiofile("output_audio.wav")
     st.info("TikTok to audio conversion successful.")
+    audio_clip = video_clip.audio
+    audio_io = io.BytesIO()
+    audio_clip.write_audiofile(audio_io, codec="mp3")
+    audio_io.seek(0)
 
+    # Initialize Whisper model
+    model = whisper.load_model(
+        "base"
+    )  # You can choose a different model size as needed
 
-def execute_transcription():
-    # Load the model
-    model = whisper.load_model("base")
+    # Use a temporary file to save the extracted audio
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=True) as tmpfile:
+        # Write the in-memory audio to the temporary file
+        tmpfile.write(audio_io.read())
+        tmpfile.flush()  # Ensure data is written to disk
 
-    # Transcribe the audio
-    result = model.transcribe("output_audio.wav")
+        # Transcribe the audio using Whisper
+        result = model.transcribe(tmpfile.name)
 
-    # Get the transcription text
-    transcription = result["text"]
-    st.info("Transcription Successful:", transcription[:40])
-    return transcription
+        # Print the transcription
+        print(result["text"])
+        st.info("Transcription Successful:", result["text"])
+
+    # Optional: close the video file to release resources
+    video_clip.close()
+    return result["text"]
 
 
 def execute_gpt(text):
