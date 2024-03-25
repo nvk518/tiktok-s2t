@@ -56,14 +56,14 @@ def obtain_audio(file_path):
 
 
 def execute_gpt(text):
-    llm = OpenAI(api_key=st.secrets["openai"])
+    llm = OpenAI(api_key=st.secrets["openai"], model_name="gpt-3.5-turbo-0125")
 
     transcribed_text = f"{text}"
 
     prompt = [
         f"""You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}. 
         Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). 
-        If an item is dining/attraction, give response in this strict format with 'Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip (in 20-40 words) in this strict format: 'Tip: _, Location: _'"""
+        If an item is dining/attraction, give response in this strict format with 'Place Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip (in 20-40 words) in this strict format: 'Tip: _, Location: _'"""
     ]
 
     response = llm.generate(prompt)
@@ -74,9 +74,8 @@ def execute_gpt(text):
     locations = output.split("\n")
     dining_attractions = []
     tips = []
-    st.info(f"output, split: {locations}")
     for loc in locations:
-        if "Name: " in loc and "Location: " in loc and "Notes: " in loc:
+        if "Place Name: " in loc and "Location: " in loc and "Notes: " in loc:
             dining_attractions.append(loc)
         elif "Tip: " in loc:
             tips.append(loc)
@@ -107,7 +106,7 @@ def update_sheet(dining_attractions, credentials):
     rows_to_insert = []
     for location in dining_attractions:
         split_loc = location.split(", Location: ")
-        name = split_loc[0].split("Name: ")[1]
+        name = split_loc[0].split("Place Name: ")[1]
         split_notes = split_loc[1].split(", Notes:")
         location = split_notes[0]
         notes = split_notes[1]
