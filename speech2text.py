@@ -180,6 +180,7 @@ def update_sheet2(tips, credentials):
 
 
 def main():
+    st.cache_data.clear()
     st.title("TikTok Processor")
 
     url = st.text_input("Enter the TikTok video URL")
@@ -192,6 +193,7 @@ def main():
                 dining_attractions, tips = execute_gpt(text)
                 update_sheet(dining_attractions, credentials)
                 update_sheet2(tips, credentials)
+                st.cache_data.clear()
                 st.success("Processing completed.")
             else:
                 st.error("Errored while executing audio transcription.")
