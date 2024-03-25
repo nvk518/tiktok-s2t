@@ -1,7 +1,5 @@
 import requests
 import re
-
-# from google.colab import drive
 from moviepy.editor import *
 import whisper
 from langchain.llms import OpenAI
@@ -9,17 +7,17 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import streamlit as st
 import io
+import json
 import tempfile
 
-# drive.mount('/content/drive')
 
-
+@st.cache_data(ttl=3600, max_entries=10, show_spinner=True, persist="disk")
 def download_tiktok(url):
     querystring = {"url": url}
 
     headers = {
-        "X-RapidAPI-Key": "7b0ea31ba2msh3cc78d4a4525496p189cc8jsn8fcbfd95ffc2",
-        "X-RapidAPI-Host": "tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com",
+        "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
+        "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
     }
 
     response = requests.get(
@@ -41,6 +39,7 @@ def download_tiktok(url):
         print(f"Failed to download video. Status code: {response.status_code}")
 
 
+@st.cache_data(ttl=3600, max_entries=10, show_spinner=True, persist="disk")
 def obtain_audio(file_path):
 
     # Replace 'your_video.mp4' with the path to your video file
@@ -48,41 +47,25 @@ def obtain_audio(file_path):
 
     # Replace 'output_audio.mp3' with the desired output MP3 file name
     st.info("TikTok to audio conversion successful.")
-    audio_clip = video_clip.audio
-    audio_io = io.BytesIO()
-    audio_clip.write_audiofile(audio_io, codec="mp3")
-    audio_io.seek(0)
-
-    # Initialize Whisper model
-    model = whisper.load_model(
-        "base"
-    )  # You can choose a different model size as needed
-
-    # Use a temporary file to save the extracted audio
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=True) as tmpfile:
-        # Write the in-memory audio to the temporary file
-        tmpfile.write(audio_io.read())
-        tmpfile.flush()  # Ensure data is written to disk
-
-        # Transcribe the audio using Whisper
-        result = model.transcribe(tmpfile.name)
-
-        # Print the transcription
-        print(result["text"])
-        st.info("Transcription Successful:", result["text"])
-
-    # Optional: close the video file to release resources
-    video_clip.close()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
+        audio_file_path = tmpfile.name
+        video_clip.audio.write_audiofile(audio_file_path)
+    model = whisper.load_model("base")
+    result = model.transcribe(audio_file_path)
+    # os.remove(audio_file_path)
+    print(result["text"])
+    st.info("Transcription Successful:", result["text"])
     return result["text"]
 
 
 def execute_gpt(text):
-    llm = OpenAI(api_key="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")
+    llm = OpenAI(api_key=st.secrets["openai"])
 
     transcribed_text = f"{text}"
 
     prompt = [
-        f"Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city, state, country they are located in: {transcribed_text}. Include area as part of location (ie. Shibuya, Dotunburi, etc). If place name is unclear (ie. the text transcript says Booted In, but could instead be Boudin Bakery in San Francisco), try fixing it. provide what the transcript says was a recommended item. Provide your response in this strict format: 'Name: _, Location: _, Notes: _'"
+        # f"Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city, state, country they are located in: {transcribed_text}. Include area as part of location (ie. Shibuya, Dotunburi, etc). If place name is unclear (ie. the text transcript says Booted In, but could instead be Boudin Bakery in San Francisco), try fixing it. provide what the transcript says was a recommended item. Provide your response in this strict format: 'Name: _, Location: _, Notes: _'"
+        "repeat this: Name: Boudin, Location: San Francisco, CA, Notes: Soup"
     ]
 
     response = llm.generate(prompt)
@@ -95,11 +78,26 @@ def execute_gpt(text):
 
 # Sheets API setup
 SHEETS_SERVICE_ACCOUNT_FILE = "./googlesheets_pk.json"
-SPREADSHEET_ID = "1UCq8qQIRUNBbtwAV4tZAUu-2sxPyNGeQaqgt9ODD8LY"
+SPREADSHEET_ID = api_key = st.secrets["sheet_id"]
 SHEET_NAME = "Sheet2"
 
 
-def update_sheet(locations):
+@st.cache_data(ttl=3600, max_entries=10, show_spinner=True, persist="disk")
+def load_credentials():
+    data = json.loads(st.secrets["sheet_secret"])
+    filename = "googlesheets_pk.json"
+
+    with open(filename, "w") as f:
+        json.dump(data, f, indent=4)
+
+    credentials = service_account.Credentials.from_service_account_file(
+        SHEETS_SERVICE_ACCOUNT_FILE
+    )
+    return credentials
+
+
+@st.cache_data(ttl=3600, max_entries=10, show_spinner=True, persist="disk")
+def update_sheet(locations, credentials):
     rows_to_insert = []
     for location in locations:
         split_loc = location.split(", Location: ")
@@ -110,9 +108,6 @@ def update_sheet(locations):
         rows_to_insert.append([name, location, notes])
         st.info("Adding location:", name, "-", location)
 
-    credentials = service_account.Credentials.from_service_account_file(
-        SHEETS_SERVICE_ACCOUNT_FILE
-    )
     service = build("sheets", "v4", credentials=credentials)
 
     request_body = {"values": rows_to_insert}
@@ -132,57 +127,20 @@ def update_sheet(locations):
     print("Update Complete. Response:", response)
 
 
-# !pip install -q streamlit
-
-# %%writefile app.py
-
-# import streamlit as st
-# st.title("TikTok Video Location Extractor")
-
-# # Input for TikTok video ID
-# video_id = st.text_input("Enter TikTok Video ID:")
-# if st.button("Process Video"):
-#   if video_id:
-#     download_tiktok(url)
-#     obtain_audio("./downloaded_video.mp4")
-#     text = execute_transcription()
-#     locations = execute_gpt(text)
-#     update_status = update_sheet(locations)
-#     if update_status:
-#       st.success("Google Sheet updated successfully.")
-#     else:
-#       st.error("Failed to update Google Sheet.")
-#   else:
-#     st.error("Please enter a valid TikTok Video ID.")
-
-# !npm install localtunnel
-# !streamlit run app.py &>/content/logs.txt &
-# import urllib
-# print("Password/Enpoint IP for localtunnel is:",urllib.request.urlopen('https://ipv4.icanhazip.com').read().decode('utf8').strip("\n"))
-# !npx localtunnel --port 8501
-
-# path = '/content/drive/My Drive/tiktok-gpt/tiktok1.mov'
-# download_tiktok(url)
-# obtain_audio("./downloaded_video.mp4")
-# text = execute_transcription()
-# locations = execute_gpt(text)
-# update_sheet(locations)
-
-
 def main():
     st.title("TikTok Video Processor")
 
     url = st.text_input("Enter the TikTok video URL")
-
+    credentials = load_credentials()
     if st.button("Process URL"):
         if url:
             # Sequence of operations
             download_tiktok(url)
-            obtain_audio("./downloaded_video.mp4")
-            text = execute_transcription()
+            text = obtain_audio("./downloaded_video.mp4")
+            # text = execute_transcription()
             if text:
                 locations = execute_gpt(text)
-                update_sheet(locations)
+                update_sheet(locations, credentials)
                 st.success("Processing completed.")
             else:
                 st.error("Errored while executing audio transcription.")
