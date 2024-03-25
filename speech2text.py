@@ -1,14 +1,13 @@
 import requests
-import re
 from moviepy.editor import *
 import whisper
 from langchain.llms import OpenAI
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import streamlit as st
-import io
 import json
 import tempfile
+import ast
 
 
 @st.cache_data(max_entries=10, show_spinner=True, persist="disk")
@@ -74,16 +73,22 @@ def execute_gpt(text):
     st.info(f"GPT Output: {output}")
 
     locations = output.split("\n")
-    cleaned_locations = []
+    locations = ast.literal_eval(locations)
+    dining_attractions = []
+    tips = []
     for loc in locations:
-        if "Name: " in loc and "Location: " in loc and "Notes" in loc:
-            cleaned_locations.append(loc)
-    st.info(f"GPT Output: {cleaned_locations}")
-    return cleaned_locations
+        if "Name: " in loc and "Location: " in loc and "Notes: " in loc:
+            dining_attractions.append(loc)
+        elif "Tip: " in loc:
+            tips.append(loc)
+    st.info(f"Dining/Attractions: {dining_attractions}")
+    st.info(f"Tips: {dining_attractions}")
+    return dining_attractions, tips
 
 
 SPREADSHEET_ID = st.secrets["sheet_id"]
-SHEET_NAME = "Sheet2"
+SHEET_NAME = "Dining/Attractions"
+SHEET_NAME2 = "Tips"
 
 
 def load_credentials():
@@ -97,10 +102,9 @@ def load_credentials():
     return credentials
 
 
-def update_sheet(locations, credentials):
-
+def update_sheet(dining_attractions, credentials):
     rows_to_insert = []
-    for location in locations:
+    for location in dining_attractions:
         split_loc = location.split(", Location: ")
         name = split_loc[0].split("Name: ")[1]
         split_notes = split_loc[1].split(", Notes:")
@@ -128,6 +132,32 @@ def update_sheet(locations, credentials):
     print("Update Complete. Response:", response)
 
 
+def update_sheet2(tips, credentials):
+    rows_to_insert = []
+    for location in tips:
+        tip = location.split("Tip: ")[1]
+        rows_to_insert.append([tip])
+        st.info(f"Adding tip: {tip}")
+
+    service = build("sheets", "v4", credentials=credentials)
+
+    request_body = {"values": rows_to_insert}
+    response = (
+        service.spreadsheets()
+        .values()
+        .append(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"{SHEET_NAME2}!A:D",
+            valueInputOption="USER_ENTERED",
+            insertDataOption="INSERT_ROWS",
+            body=request_body,
+        )
+        .execute()
+    )
+
+    print("Update Complete. Response:", response)
+
+
 def main():
     st.title("TikTok Processor")
 
@@ -138,8 +168,9 @@ def main():
             download_tiktok(url)
             text = obtain_audio("./downloaded_video.mp4")
             if text:
-                locations = execute_gpt(text)
-                update_sheet(locations, credentials)
+                dining_attractions, tips = execute_gpt(text)
+                update_sheet(dining_attractions, credentials)
+                update_sheet2(tips, credentials)
                 st.success("Processing completed.")
             else:
                 st.error("Errored while executing audio transcription.")
