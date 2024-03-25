@@ -56,7 +56,7 @@ def obtain_audio(file_path):
 
 
 def execute_gpt(text):
-    llm = OpenAI(api_key=st.secrets["openai"], model_name="gpt-3.5-turbo-0125")
+    llm = OpenAI(api_key=st.secrets["openai"], model_name="gpt-3.5-turbo-instruct")
 
     transcribed_text = f"{text}"
 
