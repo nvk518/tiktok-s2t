@@ -9,11 +9,17 @@ import json
 import tempfile
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
+from urllib.parse import quote
+
 
 SPREADSHEET_ID = st.secrets["sheet_id"]
 SHEET_NAME = "Dining"
 SHEET_NAME3 = "Attractions"
 SHEET_NAME2 = "Tips"
+yelp_headers = {
+    "accept": "application/json",
+    "Authorization": st.secrets["yelp_secret"],
+}
 
 
 @st.cache_data(max_entries=10, show_spinner=True, persist="disk")
@@ -122,14 +128,6 @@ def load_credentials():
     return credentials
 
 
-url = "https://api.yelp.com/v3/businesses/search?sort_by=best_match&limit=20"
-
-yelp_headers = {
-    "accept": "application/json",
-    "Authorization": st.secrets["yelp_secret"],
-}
-
-
 def update_sheet(dining_attractions, credentials):
     rows_to_insert = []
     for location in dining_attractions:
@@ -140,7 +138,9 @@ def update_sheet(dining_attractions, credentials):
         notes = split_notes[1]
 
         try:
-            url = "https://api.yelp.com/v3/businesses/search?location=Kyoto%2C%20Japan&term=Katsukura&sort_by=best_match&limit=1"
+            encoded_name = quote(name)
+            encoded_location = quote(location)
+            url = f"https://api.yelp.com/v3/businesses/search?location={encoded_location}&term={encoded_name}&sort_by=best_match&limit=1"
             response = requests.get(url, headers=yelp_headers)
             business = response["businesses"]
             if business:
@@ -231,7 +231,7 @@ def main():
     st.title("TripTok")
     st.header("Process Flow:", divider=True)
     st.text(
-        "TikTok URL --> Video download --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Update Google Sheets",
+        "TikTok URL --> Video download --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Yelp API --> Update Google Sheets",
     )
 
     url = st.text_input("Enter the TikTok video URL")
