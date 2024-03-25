@@ -11,7 +11,8 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 
 SPREADSHEET_ID = st.secrets["sheet_id"]
-SHEET_NAME = "Dining/Attractions"
+SHEET_NAME = "Dining"
+SHEET_NAME3= "Attractions"
 SHEET_NAME2 = "Tips"
 
 
@@ -120,6 +121,12 @@ def load_credentials():
     credentials = service_account.Credentials.from_service_account_file(filename)
     return credentials
 
+url = "https://api.yelp.com/v3/businesses/search?sort_by=best_match&limit=20"
+
+yelp_headers = {
+    "accept": "application/json",
+    "Authorization": f"Bearer {st.secrets["yelp_secret"]}"
+}
 
 def update_sheet(dining_attractions, credentials):
     rows_to_insert = []
@@ -129,8 +136,38 @@ def update_sheet(dining_attractions, credentials):
         split_notes = split_loc[1].split(", Notes:")
         location = split_notes[0]
         notes = split_notes[1]
-        rows_to_insert.append([name, location, notes])
-        st.info(f"Adding location: {name} - {location}")
+
+        try:
+            url = "https://api.yelp.com/v3/businesses/search?location=Kyoto%2C%20Japan&term=Katsukura&sort_by=best_match&limit=1"
+            response = requests.get(url, headers=yelp_headers)
+            business = response["businesses"]
+            if business:
+                sheet = SHEET_NAME
+                first_item = business[0]
+                id = first_item["id"]
+                url = first_item["url"]
+                full_name = first_item["name"]
+                review_count = first_item["review_count"]
+                rating = first_item["rating"]
+                coordinates = first_item["coordinates"]
+                categories = first_item["categories"]
+
+                string_categories = ', '.join(categories)
+
+                maps_link_coords = f"https://www.google.com/maps/?q={coordinates['latitude']},{coordinates['longitude']}"
+                hyperlink_maps_chip = f'=HYPERLINK("{maps_link_coords}", "{location}")'
+                hyperlink_name= f'=HYPERLINK("{url}", "{full_name}")'
+                
+                rows_to_insert.append([hyperlink_name, hyperlink_maps_chip, string_categories, rating, review_count, notes])
+            else:
+                sheet = SHEET_NAME3
+                rows_to_insert.append([name, location, notes])
+            st.info(f"Adding location: {name} - {location}")
+        except():
+            st.error("Error while connecting to Yelp API.")
+            return
+
+
 
     service = build("sheets", "v4", credentials=credentials)
 
@@ -140,7 +177,7 @@ def update_sheet(dining_attractions, credentials):
         .values()
         .append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"{SHEET_NAME}!A:D",
+            range=f"{sheet}!A:D",
             valueInputOption="USER_ENTERED",
             insertDataOption="INSERT_ROWS",
             body=request_body,
@@ -198,7 +235,6 @@ def main():
                 dining_attractions, tips = execute_gpt(text)
                 update_sheet(dining_attractions, credentials)
                 update_sheet2(tips, credentials)
-                st.cache_data.clear()
                 st.success("Processing completed.")
             else:
                 st.error("Errored while executing audio transcription.")
