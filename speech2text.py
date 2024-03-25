@@ -77,12 +77,11 @@ def execute_gpt(text):
 
 
 # Sheets API setup
-SHEETS_SERVICE_ACCOUNT_FILE = "./googlesheets_pk.json"
-SPREADSHEET_ID = api_key = st.secrets["sheet_id"]
+# SHEETS_SERVICE_ACCOUNT_FILE = "./googlesheets_pk.json"
+SPREADSHEET_ID = st.secrets["sheet_id"]
 SHEET_NAME = "Sheet2"
 
 
-@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def load_credentials():
     data = json.loads(st.secrets["sheet_secret"])
     filename = "googlesheets_pk.json"
@@ -90,13 +89,10 @@ def load_credentials():
     with open(filename, "w") as f:
         json.dump(data, f, indent=4)
 
-    credentials = service_account.Credentials.from_service_account_file(
-        SHEETS_SERVICE_ACCOUNT_FILE
-    )
+    credentials = service_account.Credentials.from_service_account_file(filename)
     return credentials
 
 
-@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def update_sheet(locations, credentials):
     rows_to_insert = []
     for location in locations:
@@ -128,7 +124,7 @@ def update_sheet(locations, credentials):
 
 
 def main():
-    st.title("TikTok Video Processor")
+    st.title("TikTok Processor")
 
     url = st.text_input("Enter the TikTok video URL")
     credentials = load_credentials()
