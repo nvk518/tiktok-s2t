@@ -65,7 +65,7 @@ def execute_gpt(text):
 
     prompt = [
         # f"Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city, state, country they are located in: {transcribed_text}. Include area as part of location (ie. Shibuya, Dotunburi, etc). If place name is unclear (ie. the text transcript says Booted In, but could instead be Boudin Bakery in San Francisco), try fixing it. provide what the transcript says was a recommended item. Provide your response in this strict format: 'Name: _, Location: _, Notes: _'"
-        "repeat this: Name: Boudin, Location: San Francisco, CA, Notes: Soup"
+        "repeat this: Name: Boudin, Location: San Francisco, CA, Notes/Recommendations: Soup"
     ]
 
     response = llm.generate(prompt)
@@ -73,6 +73,7 @@ def execute_gpt(text):
     print(response)
     output = response.generations[0][0].text.strip()
     locations = output.split("\n")
+    st.info(f"GPT Output: {locations}")
     return locations
 
 
@@ -94,6 +95,7 @@ def load_credentials():
 
 
 def update_sheet(locations, credentials):
+
     rows_to_insert = []
     for location in locations:
         split_loc = location.split(", Location: ")
