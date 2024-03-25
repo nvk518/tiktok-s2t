@@ -126,9 +126,59 @@ def load_credentials():
     return credentials
 
 
-def update_sheet(dining_attractions, credentials):
+def request_yelp_api(name, location, notes):
     rows_to_insert = []
-    attractions_rows_to_insert = []
+    encoded_name = quote(name)
+    encoded_location = quote(location)
+    url = f"https://api.yelp.com/v3/businesses/search?location={encoded_location}&term={encoded_name}&sort_by=best_match&limit=1"
+    response = requests.get(url, headers=yelp_headers)
+    if response.status_code != 200:
+        st.error("Error while accessing Yelp API.")
+        return
+    business = response.json()["businesses"]
+    if business:
+        first_item = business[0]
+        id = first_item["id"]
+        url = first_item["url"]
+        full_name = first_item["name"]
+        review_count = first_item["review_count"]
+        rating = first_item["rating"]
+        coordinates = first_item["coordinates"]
+        categories = [cat["title"] for cat in first_item["categories"]]
+
+        string_categories = ", ".join(categories)
+
+        maps_link_coords = f"https://www.google.com/maps/?q={coordinates['latitude']},{coordinates['longitude']}"
+        hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
+        hyperlink_name = f'=HYPERLINK("{url}", "{full_name}")'
+
+        rows_to_insert.append(
+            [
+                hyperlink_name,
+                hyperlink_map,
+                string_categories,
+                rating,
+                review_count,
+                notes,
+            ]
+        )
+    else:
+        maps_link_coords = f"https://www.google.com/maps/?q={encoded_location}"
+        hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
+        rows_to_insert.append(
+            [
+                name,
+                hyperlink_map,
+                "",
+                "",
+                "",
+                notes,
+            ]
+        )
+    return rows_to_insert
+
+
+def update_sheet_dining_attractions(dining_attractions, credentials):
     for location in dining_attractions:
         split_loc = location.split(", Location: ")
         name = split_loc[0].split("Name: ")[1]
@@ -137,53 +187,7 @@ def update_sheet(dining_attractions, credentials):
         notes = split_notes[1]
 
         try:
-            encoded_name = quote(name)
-            encoded_location = quote(location)
-            url = f"https://api.yelp.com/v3/businesses/search?location={encoded_location}&term={encoded_name}&sort_by=best_match&limit=1"
-            response = requests.get(url, headers=yelp_headers)
-            if response.status_code != 200:
-                st.error("Error while accessing Yelp API.")
-                return
-            business = response.json()["businesses"]
-            if business:
-                first_item = business[0]
-                id = first_item["id"]
-                url = first_item["url"]
-                full_name = first_item["name"]
-                review_count = first_item["review_count"]
-                rating = first_item["rating"]
-                coordinates = first_item["coordinates"]
-                categories = [cat["title"] for cat in first_item["categories"]]
-
-                string_categories = ", ".join(categories)
-
-                maps_link_coords = f"https://www.google.com/maps/?q={coordinates['latitude']},{coordinates['longitude']}"
-                hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
-                hyperlink_name = f'=HYPERLINK("{url}", "{full_name}")'
-
-                rows_to_insert.append(
-                    [
-                        hyperlink_name,
-                        hyperlink_map,
-                        string_categories,
-                        rating,
-                        review_count,
-                        notes,
-                    ]
-                )
-            else:
-                maps_link_coords = f"https://www.google.com/maps/?q={encoded_location}"
-                hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
-                rows_to_insert.append(
-                    [
-                        name,
-                        hyperlink_map,
-                        "",
-                        "",
-                        "",
-                        notes,
-                    ]
-                )
+            rows_to_insert = request_yelp_api(name, location, notes)
         except ():
             st.error("Error while parsing Yelp API response.")
             return
@@ -207,7 +211,7 @@ def update_sheet(dining_attractions, credentials):
     print("Update Complete. Response:", response)
 
 
-def update_sheet2(tips, credentials):
+def update_sheet_tips(tips, credentials):
     rows_to_insert = []
     for location in tips:
         tip_split = location.split("Tip: ")
@@ -253,8 +257,8 @@ def main():
             text = obtain_audio("./downloaded_video.mp4")
             if text:
                 dining_attractions, tips = execute_gpt(text)
-                update_sheet(dining_attractions, credentials)
-                update_sheet2(tips, credentials)
+                update_sheet_dining_attractions(dining_attractions, credentials)
+                update_sheet_tips(tips, credentials)
                 st.success("Processing completed.")
                 sheet_url = st.secrets["sheet_url"]
                 st.markdown("[View Google Sheet](%s)" % sheet_url)
