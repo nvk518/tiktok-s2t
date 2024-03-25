@@ -144,7 +144,7 @@ def update_sheet(dining_attractions, credentials):
             if response.status_code != 200:
                 st.error("Error while accessing Yelp API.")
                 return
-            business = response["businesses"]
+            business = response.json()["businesses"]
             if business:
                 sheet = SHEET_NAME
                 first_item = business[0]
