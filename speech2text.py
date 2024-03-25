@@ -7,7 +7,8 @@ from google.oauth2 import service_account
 import streamlit as st
 import json
 import tempfile
-import ast
+from langchain_anthropic import ChatAnthropic
+from langchain_core.prompts import ChatPromptTemplate
 
 
 @st.cache_data(max_entries=10, show_spinner=True, persist="disk")
@@ -56,19 +57,36 @@ def obtain_audio(file_path):
 
 
 def execute_gpt(text):
-    llm = OpenAI(api_key=st.secrets["openai"], model_name="gpt-3.5-turbo-instruct")
+    # llm = OpenAI(api_key=st.secrets["openai"], model_name="gpt-3.5-turbo-instruct")
+    llm = ChatAnthropic(
+        temperature=0,
+        anthropic_api_key=st.secrets["anthropic"],
+        model_name="claude-3-haiku-20240307",
+    )
 
     transcribed_text = f"{text}"
 
-    prompt = [
-        f"""You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}. 
-        Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). 
-        If an item is dining/attraction, give response in this strict format with 'Place Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip (in 20-40 words) in this strict format: 'Tip: _, Location: _'"""
-    ]
+    # prompt = [
+    #     f"""You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}.
+    #     Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea).
+    #     If an item is dining/attraction, give response in this strict format with 'Place Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip (in 20-40 words) in this strict format: 'Tip: _, Location: _'"""
+    # ]
 
-    response = llm.generate(prompt)
+    # response = llm.generate(prompt)
+    system = """You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in. 
+    #     Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). 
+    #     If an item is dining/attraction, give response in this strict format with 'Place Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip (in 20-40 words) in this strict format: 'Tip: _, Location: _'"""
+    human = "{transcribed_text}"
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
-    output = response.generations[0][0].text.strip()
+    chain = prompt | llm
+    response = chain.invoke(
+        {
+            "transcribed_text": transcribed_text,
+        }
+    )
+    # output = response.generations[0][0].text.strip()
+    output = response.content.strip()
     st.info(f"GPT Output: {output}")
 
     locations = output.split("\n")
