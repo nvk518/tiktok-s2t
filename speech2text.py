@@ -154,7 +154,7 @@ def update_sheet(dining_attractions, credentials):
                 review_count = first_item["review_count"]
                 rating = first_item["rating"]
                 coordinates = first_item["coordinates"]
-                categories = first_item["categories"]
+                categories = [cat["title"] for cat in first_item["categories"]]
 
                 string_categories = ", ".join(categories)
 
@@ -229,7 +229,7 @@ def update_sheet2(tips, credentials):
 
 
 def main():
-    st.cache_data.clear()
+
     st.title("TripTok")
     st.header("Process Flow:", divider=True)
     st.text(
@@ -239,6 +239,7 @@ def main():
     url = st.text_input("Enter the TikTok video URL")
     credentials = load_credentials()
     if st.button("Process URL"):
+        st.cache_data.clear()
         if url:
             download_tiktok(url)
             text = obtain_audio("./downloaded_video.mp4")
