@@ -11,7 +11,6 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from urllib.parse import quote
 
-
 SPREADSHEET_ID = st.secrets["sheet_id"]
 SHEET_NAME = "Dining"
 SHEET_NAME3 = "Attractions"
@@ -22,7 +21,7 @@ yelp_headers = {
 }
 
 
-@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=3, show_spinner=True, persist="disk")
 def download_tiktok(url):
     querystring = {"url": url}
 
@@ -50,7 +49,7 @@ def download_tiktok(url):
         print(f"Failed to download video. Status code: {response.status_code}")
 
 
-@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=3, show_spinner=True, persist="disk")
 def obtain_audio(file_path):
 
     video_clip = VideoFileClip(file_path)
@@ -142,6 +141,9 @@ def update_sheet(dining_attractions, credentials):
             encoded_location = quote(location)
             url = f"https://api.yelp.com/v3/businesses/search?location={encoded_location}&term={encoded_name}&sort_by=best_match&limit=1"
             response = requests.get(url, headers=yelp_headers)
+            if response.status_code != 200:
+                st.error("Error while accessing Yelp API.")
+                return
             business = response["businesses"]
             if business:
                 sheet = SHEET_NAME
@@ -175,7 +177,7 @@ def update_sheet(dining_attractions, credentials):
                 rows_to_insert.append([name, location, notes])
             st.info(f"Adding location: {name} - {location}")
         except ():
-            st.error("Error while connecting to Yelp API.")
+            st.error("Error while parsing Yelp API response.")
             return
 
     service = build("sheets", "v4", credentials=credentials)
