@@ -54,7 +54,7 @@ def obtain_audio(file_path):
     result = model.transcribe(audio_file_path)
     # os.remove(audio_file_path)
     print(result["text"])
-    st.info("Transcription Successful:", result["text"])
+    st.info(f"Transcription Successful: {result['text']}")
     return result["text"]
 
 
@@ -106,7 +106,7 @@ def update_sheet(locations, credentials):
         location = split_notes[0]
         notes = split_notes[1]
         rows_to_insert.append([name, location, notes])
-        st.info("Adding location:", name, "-", location)
+        st.info(f"Adding location: {name} - {location}")
 
     service = build("sheets", "v4", credentials=credentials)
 
