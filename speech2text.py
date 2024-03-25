@@ -184,7 +184,6 @@ def update_sheet(dining_attractions, credentials):
                         notes,
                     ]
                 )
-            st.info(f"Adding location: {full_name} - {location}")
         except ():
             st.error("Error while parsing Yelp API response.")
             return
@@ -257,6 +256,8 @@ def main():
                 update_sheet(dining_attractions, credentials)
                 update_sheet2(tips, credentials)
                 st.success("Processing completed.")
+                sheet_url = st.secrets["sheet_url"]
+                st.markdown("View Google Sheet [sheet_url](%s)" % sheet_url)
             else:
                 st.error("Errored while executing audio transcription.")
         else:
