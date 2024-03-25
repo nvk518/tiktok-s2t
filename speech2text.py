@@ -42,10 +42,8 @@ def download_tiktok(url):
 @st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def obtain_audio(file_path):
 
-    # Replace 'your_video.mp4' with the path to your video file
     video_clip = VideoFileClip(file_path)
 
-    # Replace 'output_audio.mp3' with the desired output MP3 file name
     st.info("TikTok to audio conversion successful.")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
         audio_file_path = tmpfile.name
@@ -64,25 +62,26 @@ def execute_gpt(text):
     transcribed_text = f"{text}"
 
     prompt = [
-        # f"Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city, state, country they are located in: {transcribed_text}. Include area as part of location (ie. Shibuya, Dotunburi, etc). If place name is unclear (ie. the text transcript says Booted In, but could instead be Boudin Bakery in San Francisco), try fixing it. provide what the transcript says was a recommended item. Provide your response in this strict format: 'Name: _, Location: _, Notes: _'"
-        "repeat this: Name: Boudin, Location: San Francisco, CA, Notes/Recommendations: Soup"
+        f"""Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}. 
+        Include area as part of location (ie. Shibuya, Dotunburi, etc). If place name is unclear, infer using context. 
+        Categorize each item as 'Attraction', 'Dining', or 'Tip'. If an item is dining or attraction, give response in this strict format: ['Name: _, Location: _, Notes: _']. If it is a tip, give summarized tip this strict format: ['Tip: _']. your output will be a nested list [[], [], []...]"""
+        # "repeat this: Name: Boudin, Location: San Francisco, CA, Notes/Recommendations: Soup"
     ]
 
     response = llm.generate(prompt)
 
-    print(response)
     output = response.generations[0][0].text.strip()
+    st.info(f"GPT Output: {output}")
+
     locations = output.split("\n")
     cleaned_locations = []
     for loc in locations:
-        if "Name: " in loc and "Location: " in loc and "Notes/Recommendations" in loc:
+        if "Name: " in loc and "Location: " in loc and "Notes" in loc:
             cleaned_locations.append(loc)
     st.info(f"GPT Output: {cleaned_locations}")
     return cleaned_locations
 
 
-# Sheets API setup
-# SHEETS_SERVICE_ACCOUNT_FILE = "./googlesheets_pk.json"
 SPREADSHEET_ID = st.secrets["sheet_id"]
 SHEET_NAME = "Sheet2"
 
@@ -104,7 +103,7 @@ def update_sheet(locations, credentials):
     for location in locations:
         split_loc = location.split(", Location: ")
         name = split_loc[0].split("Name: ")[1]
-        split_notes = split_loc[1].split(", Notes/Recommendations:")
+        split_notes = split_loc[1].split(", Notes:")
         location = split_notes[0]
         notes = split_notes[1]
         rows_to_insert.append([name, location, notes])
@@ -136,10 +135,8 @@ def main():
     credentials = load_credentials()
     if st.button("Process URL"):
         if url:
-            # Sequence of operations
             download_tiktok(url)
             text = obtain_audio("./downloaded_video.mp4")
-            # text = execute_transcription()
             if text:
                 locations = execute_gpt(text)
                 update_sheet(locations, credentials)
