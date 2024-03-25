@@ -152,33 +152,32 @@ def request_yelp_api(name, location, notes):
         hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
         hyperlink_name = f'=HYPERLINK("{url}", "{full_name}")'
 
-        rows_to_insert.append(
-            [
-                hyperlink_name,
-                hyperlink_map,
-                string_categories,
-                rating,
-                review_count,
-                notes,
-            ]
-        )
+        rows_to_insert = [
+            hyperlink_name,
+            hyperlink_map,
+            string_categories,
+            rating,
+            review_count,
+            notes,
+        ]
+
     else:
         maps_link_coords = f"https://www.google.com/maps/?q={encoded_location}"
         hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
-        rows_to_insert.append(
-            [
-                name,
-                hyperlink_map,
-                "",
-                "",
-                "",
-                notes,
-            ]
-        )
+        rows_to_insert = [
+            name,
+            hyperlink_map,
+            "",
+            "",
+            "",
+            notes,
+        ]
+
     return rows_to_insert
 
 
 def update_sheet_dining_attractions(dining_attractions, credentials):
+    rows_to_insert = []
     for location in dining_attractions:
         split_loc = location.split(", Location: ")
         name = split_loc[0].split("Name: ")[1]
@@ -187,7 +186,7 @@ def update_sheet_dining_attractions(dining_attractions, credentials):
         notes = split_notes[1]
 
         try:
-            rows_to_insert = request_yelp_api(name, location, notes)
+            rows_to_insert.append(request_yelp_api(name, location, notes))
         except ():
             st.error("Error while parsing Yelp API response.")
             return
