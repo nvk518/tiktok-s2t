@@ -58,10 +58,11 @@ def obtain_audio(file_path):
 
 def execute_gpt(text):
     # llm = OpenAI(api_key=st.secrets["openai"], model_name="gpt-3.5-turbo-instruct")
+    model = "claude-3-haiku-20240307"
     llm = ChatAnthropic(
         temperature=0,
         anthropic_api_key=st.secrets["anthropic"],
-        model_name="claude-3-haiku-20240307",
+        model_name=model,
     )
 
     transcribed_text = f"{text}"
@@ -74,8 +75,8 @@ def execute_gpt(text):
 
     # response = llm.generate(prompt)
     system = """You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in. 
-    #     Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). 
-    #     If an item is dining/attraction, give response in this extremely strict format with Name, Location, and Notes: "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip (in 20-40 words) in this extremely strict format w/ Tip and Location: 'Tip: _, Location: _'"""
+    Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, Gion, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). If an item is dining/attraction, give response in this extremely strict format with Name, Location, and Notes: "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip in this extremely strict format w/ Tip and Location: 'Tip: _, Location: _'. Here is an example response:
+    'Name: 200-year-old spot, Location: Kyoto, Japan, Notes: Serves traditional Yuba (tofu skin) soup'\n'Name: Michelin guide recommended pizza place, Location: Kyoto, Japan, Notes: Serves good pizzas'\n'Name: Motoi, Location: Kyoto, Japan, Notes: Michelin-recommended spot for the best gyoza (dumplings)'\n'Tip: Visit Kyoto during cherry blossom season, Location: Kyoto, Japan'\n'Tip: Try fruit sandwiches and shaped ice in Japan, Location: Japan'"""
     human = "{transcribed_text}"
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
@@ -87,7 +88,7 @@ def execute_gpt(text):
     )
     # output = response.generations[0][0].text.strip()
     output = response.content.strip()
-    st.info(f"GPT Output: {output}")
+    st.info(f"Model ({model}) response: {output}")
 
     locations = output.split("\n")
     dining_attractions = []
@@ -181,7 +182,12 @@ def update_sheet2(tips, credentials):
 
 def main():
     st.cache_data.clear()
-    st.title("TikTok Processor")
+    st.title("TikTok to Google Sheets")
+    st.header("Process Flow:", divider=True)
+    st.subheader(
+        "TikTok URL --> Video download --> MP4 to MP3 conversion --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing --> Update Google Sheet",
+        divider=True,
+    )
 
     url = st.text_input("Enter the TikTok video URL")
     credentials = load_credentials()
