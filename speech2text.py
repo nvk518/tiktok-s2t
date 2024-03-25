@@ -56,7 +56,7 @@ def obtain_audio(file_path):
     result = model.transcribe(audio_file_path)
 
     print(result["text"])
-    st.success(f"Transcription Successful: {result['text']}")
+    st.info(f"Transcription Successful: {result['text']}")
     return result["text"]
 
 
@@ -77,15 +77,16 @@ def execute_gpt(text):
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
     chain = prompt | llm
+    st.info(f"Invoking {model}...")
     response = chain.invoke(
         {
             "transcribed_text": transcribed_text,
         }
     )
 
-    st.info("Model query successful.")
+    st.success("Model query successful.")
     output = response.content.strip()
-    st.info(f"Language Model ({model}) response: {output}")
+    st.info(f"LLM response: {output}")
     first = output.find("Name: ")
     if first == -1:
         first = output.find("Tip: ")
@@ -98,7 +99,7 @@ def execute_gpt(text):
     dining_attractions = []
     tips = []
     for loc in locations:
-        if "Place Name: " in loc and "Location: " in loc and "Notes: " in loc:
+        if "Name: " in loc and "Location: " in loc and "Notes: " in loc:
             dining_attractions.append(loc)
         elif "Tip: " in loc:
             tips.append(loc)
@@ -181,10 +182,10 @@ def update_sheet2(tips, credentials):
 
 def main():
     st.cache_data.clear()
-    st.title("TikTok to Google Sheets")
+    st.title("TripTok")
     st.header("Process Flow:", divider=True)
     st.text(
-        "TikTok URL --> Video download --> MP4 to MP3 conversion --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing --> Update Google Sheet",
+        "TikTok URL --> Video download --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Update Google Sheets",
     )
 
     url = st.text_input("Enter the TikTok video URL")
