@@ -12,7 +12,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 SPREADSHEET_ID = st.secrets["sheet_id"]
 SHEET_NAME = "Dining"
-SHEET_NAME3= "Attractions"
+SHEET_NAME3 = "Attractions"
 SHEET_NAME2 = "Tips"
 
 
@@ -121,12 +121,14 @@ def load_credentials():
     credentials = service_account.Credentials.from_service_account_file(filename)
     return credentials
 
+
 url = "https://api.yelp.com/v3/businesses/search?sort_by=best_match&limit=20"
 
 yelp_headers = {
     "accept": "application/json",
-    "Authorization": f"Bearer {st.secrets["yelp_secret"]}"
+    "Authorization": st.secrets["yelp_secret"],
 }
+
 
 def update_sheet(dining_attractions, credentials):
     rows_to_insert = []
@@ -152,22 +154,29 @@ def update_sheet(dining_attractions, credentials):
                 coordinates = first_item["coordinates"]
                 categories = first_item["categories"]
 
-                string_categories = ', '.join(categories)
+                string_categories = ", ".join(categories)
 
                 maps_link_coords = f"https://www.google.com/maps/?q={coordinates['latitude']},{coordinates['longitude']}"
                 hyperlink_maps_chip = f'=HYPERLINK("{maps_link_coords}", "{location}")'
-                hyperlink_name= f'=HYPERLINK("{url}", "{full_name}")'
-                
-                rows_to_insert.append([hyperlink_name, hyperlink_maps_chip, string_categories, rating, review_count, notes])
+                hyperlink_name = f'=HYPERLINK("{url}", "{full_name}")'
+
+                rows_to_insert.append(
+                    [
+                        hyperlink_name,
+                        hyperlink_maps_chip,
+                        string_categories,
+                        rating,
+                        review_count,
+                        notes,
+                    ]
+                )
             else:
                 sheet = SHEET_NAME3
                 rows_to_insert.append([name, location, notes])
             st.info(f"Adding location: {name} - {location}")
-        except():
+        except ():
             st.error("Error while connecting to Yelp API.")
             return
-
-
 
     service = build("sheets", "v4", credentials=credentials)
 
