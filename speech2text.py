@@ -89,7 +89,14 @@ def execute_gpt(text):
     # output = response.generations[0][0].text.strip()
     output = response.content.strip()
     st.info(f"Model ({model}) response: {output}")
-    locations = locations.split(";")
+    first = output.find("Name: ")
+    if first == -1:
+        first = output.find("Tip: ")
+        if first == -1:
+            st.error("No dining/attractions/tips found!")
+            return
+    output = output[first:]
+    locations = output.split(";")
     st.info(locations)
     dining_attractions = []
     tips = []
