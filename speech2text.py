@@ -61,9 +61,9 @@ def execute_gpt(text):
     transcribed_text = f"{text}"
 
     prompt = [
-        f"""Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}. 
-        Include area as part of location (ie. Shibuya, Dotunburi, etc). If place name is unclear, infer using context. 
-        If an item is dining or attraction, give response in this strict format: ['Name: _, Location: _, Notes: _']. If it is a tip, give summarized tip this strict format: ['Tip: _']. your output will be a nested list [['Name: _, Location: _, Notes: _'], ['Tip: _'], ['Tip: _']...]"""
+        f"""Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}. 
+        Include area of city as part of location (ie. Shibuya, Dotunburi, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). 
+        If an item is dining or attraction, give response in this strict format: ['Name: _, Location: _, Notes: _']. If it is a tip, give summarized tip this strict format: ['Tip: _']. Separate each tip/dining/attraction with a semicolon (;)"""
     ]
 
     response = llm.generate(prompt)
@@ -72,9 +72,9 @@ def execute_gpt(text):
     st.info(f"GPT Output: {output}")
 
     locations = output.split("\n")
-    locations = ast.literal_eval(locations)
     dining_attractions = []
     tips = []
+    st.info(f"output, split: {locations}")
     for loc in locations:
         if "Name: " in loc and "Location: " in loc and "Notes: " in loc:
             dining_attractions.append(loc)
