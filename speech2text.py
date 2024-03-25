@@ -75,8 +75,8 @@ def execute_gpt(text):
 
     # response = llm.generate(prompt)
     system = """You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in. 
-    Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, Gion, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). If an item is dining/attraction, give response in this extremely strict format with Name, Location, and Notes: "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip in this extremely strict format w/ Tip and Location: 'Tip: _, Location: _'. Here is an example response:
-    'Name: 200-year-old spot, Location: Kyoto, Japan, Notes: Serves traditional Yuba (tofu skin) soup'\n'Name: Michelin guide recommended pizza place, Location: Kyoto, Japan, Notes: Serves good pizzas'\n'Name: Motoi, Location: Kyoto, Japan, Notes: Michelin-recommended spot for the best gyoza (dumplings)'\n'Tip: Visit Kyoto during cherry blossom season, Location: Kyoto, Japan'\n'Tip: Try fruit sandwiches and shaped ice in Japan, Location: Japan'"""
+    Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, Gion, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). If an item is dining/attraction, give response in this extremely strict format with Name, Location, and Notes: "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip in this extremely strict format w/ Tip and Location: 'Tip: _, Location: _'. Each must be separated by a semicolon ';'. Do not lead in with anything like 'Here are the restaurants, attractions, and tips mentioned in the transcript:'. Here is an example response:
+    'Name: 200-year-old spot, Location: Kyoto, Japan, Notes: Serves traditional Yuba (tofu skin) soup';'Name: Michelin guide recommended pizza place, Location: Kyoto, Japan, Notes: Serves good pizzas';'Name: Motoi, Location: Kyoto, Japan, Notes: Michelin-recommended spot for the best gyoza (dumplings)';'Tip: Visit Kyoto during cherry blossom season, Location: Kyoto, Japan';'Tip: Try fruit sandwiches and shaped ice in Japan, Location: Japan'"""
     human = "{transcribed_text}"
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
@@ -89,8 +89,8 @@ def execute_gpt(text):
     # output = response.generations[0][0].text.strip()
     output = response.content.strip()
     st.info(f"Model ({model}) response: {output}")
-
-    locations = output.split("\n")
+    locations = locations.split(";")
+    st.info(locations)
     dining_attractions = []
     tips = []
     for loc in locations:
@@ -184,9 +184,8 @@ def main():
     st.cache_data.clear()
     st.title("TikTok to Google Sheets")
     st.header("Process Flow:", divider=True)
-    st.subheader(
+    st.text(
         "TikTok URL --> Video download --> MP4 to MP3 conversion --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing --> Update Google Sheet",
-        divider=True,
     )
 
     url = st.text_input("Enter the TikTok video URL")
