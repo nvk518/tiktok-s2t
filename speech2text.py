@@ -12,8 +12,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from urllib.parse import quote
 
 SPREADSHEET_ID = st.secrets["sheet_id"]
-SHEET_NAME = "Dining"
-SHEET_NAME3 = "Attractions"
+SHEET_NAME = "Dining/Attractions"
 SHEET_NAME2 = "Tips"
 yelp_headers = {
     "accept": "application/json",
@@ -128,7 +127,7 @@ def load_credentials():
 
 
 def update_sheet(dining_attractions, credentials):
-    dining_rows_to_insert = []
+    rows_to_insert = []
     attractions_rows_to_insert = []
     for location in dining_attractions:
         split_loc = location.split(", Location: ")
@@ -159,13 +158,13 @@ def update_sheet(dining_attractions, credentials):
                 string_categories = ", ".join(categories)
 
                 maps_link_coords = f"https://www.google.com/maps/?q={coordinates['latitude']},{coordinates['longitude']}"
-                hyperlink_maps_chip = f'=HYPERLINK("{maps_link_coords}", "{location}")'
+                hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
                 hyperlink_name = f'=HYPERLINK("{url}", "{full_name}")'
 
-                dining_rows_to_insert.append(
+                rows_to_insert.append(
                     [
                         hyperlink_name,
-                        hyperlink_maps_chip,
+                        hyperlink_map,
                         string_categories,
                         rating,
                         review_count,
@@ -173,15 +172,26 @@ def update_sheet(dining_attractions, credentials):
                     ]
                 )
             else:
-                attractions_rows_to_insert.append([name, location, notes])
-            st.info(f"Adding location: {name} - {location}")
+                maps_link_coords = f"https://www.google.com/maps/?q={encoded_location}"
+                hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
+                rows_to_insert.append(
+                    [
+                        name,
+                        hyperlink_map,
+                        "",
+                        "",
+                        "",
+                        notes,
+                    ]
+                )
+            st.info(f"Adding location: {full_name} - {location}")
         except ():
             st.error("Error while parsing Yelp API response.")
             return
 
     service = build("sheets", "v4", credentials=credentials)
 
-    request_body = {"values": dining_rows_to_insert}
+    request_body = {"values": rows_to_insert}
     response = (
         service.spreadsheets()
         .values()
@@ -195,19 +205,6 @@ def update_sheet(dining_attractions, credentials):
         .execute()
     )
 
-    request_body = {"values": attractions_rows_to_insert}
-    response = (
-        service.spreadsheets()
-        .values()
-        .append(
-            spreadsheetId=SPREADSHEET_ID,
-            range=f"{SHEET_NAME3}!A:D",
-            valueInputOption="USER_ENTERED",
-            insertDataOption="INSERT_ROWS",
-            body=request_body,
-        )
-        .execute()
-    )
     print("Update Complete. Response:", response)
 
 
