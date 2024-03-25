@@ -132,7 +132,7 @@ def update_sheet(dining_attractions, credentials):
     rows_to_insert = []
     for location in dining_attractions:
         split_loc = location.split(", Location: ")
-        name = split_loc[0].split("Place Name: ")[1]
+        name = split_loc[0].split("Name: ")[1]
         split_notes = split_loc[1].split(", Notes:")
         location = split_notes[0]
         notes = split_notes[1]
