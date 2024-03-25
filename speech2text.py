@@ -63,8 +63,7 @@ def execute_gpt(text):
     prompt = [
         f"""Identify all restaurants/attractions mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}. 
         Include area as part of location (ie. Shibuya, Dotunburi, etc). If place name is unclear, infer using context. 
-        Categorize each item as 'Attraction', 'Dining', or 'Tip'. If an item is dining or attraction, give response in this strict format: ['Name: _, Location: _, Notes: _']. If it is a tip, give summarized tip this strict format: ['Tip: _']. your output will be a nested list [[], [], []...]"""
-        # "repeat this: Name: Boudin, Location: San Francisco, CA, Notes/Recommendations: Soup"
+        If an item is dining or attraction, give response in this strict format: ['Name: _, Location: _, Notes: _']. If it is a tip, give summarized tip this strict format: ['Tip: _']. your output will be a nested list [['Name: _, Location: _, Notes: _'], ['Tip: _'], ['Tip: _']...]"""
     ]
 
     response = llm.generate(prompt)
