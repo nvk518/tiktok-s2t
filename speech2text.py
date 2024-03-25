@@ -62,8 +62,8 @@ def execute_gpt(text):
 
     prompt = [
         f"""You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}. 
-        Include area of city as part of location (ie. Shibuya, Dotunburi, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). 
-        If an item is dining/attraction, give response in this strict format with 'Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip in this strict format: 'Tip: _'"""
+        Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). 
+        If an item is dining/attraction, give response in this strict format with 'Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip (in 20-40 words) in this strict format: 'Tip: _, Location: _'"""
     ]
 
     response = llm.generate(prompt)
@@ -80,8 +80,10 @@ def execute_gpt(text):
             dining_attractions.append(loc)
         elif "Tip: " in loc:
             tips.append(loc)
-    st.info(f"Dining/Attractions: {dining_attractions}")
-    st.info(f"Tips: {dining_attractions}")
+    if dining_attractions:
+        st.info(f"Dining/Attractions: {dining_attractions}")
+    if tips:
+        st.info(f"Tips: {tips}")
     return dining_attractions, tips
 
 
@@ -134,9 +136,12 @@ def update_sheet(dining_attractions, credentials):
 def update_sheet2(tips, credentials):
     rows_to_insert = []
     for location in tips:
-        tip = location.split("Tip: ")[1]
-        rows_to_insert.append([tip])
-        st.info(f"Adding tip: {tip}")
+        tip_split = location.split("Tip: ")
+        loc_split = tip_split[1].split(", Location: ")
+        tip = loc_split[0]
+        loc = loc_split[1]
+        rows_to_insert.append([tip, loc])
+        st.info(f"Adding tip: {tip} - {loc}")
 
     service = build("sheets", "v4", credentials=credentials)
 
