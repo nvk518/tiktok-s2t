@@ -63,7 +63,7 @@ def execute_gpt(text):
     prompt = [
         f"""You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}. 
         Include area of city as part of location (ie. Shibuya, Dotunburi, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). 
-        If an item is dining/attraction, give response in this strict format with 'Name', 'Location' and 'Notes': ['Name: _, Location: _, Notes: _'], where 'Notes' is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip in this strict format: ['Tip: _']"""
+        If an item is dining/attraction, give response in this strict format with 'Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip in this strict format: 'Tip: _'"""
     ]
 
     response = llm.generate(prompt)
