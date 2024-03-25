@@ -11,7 +11,7 @@ import json
 import tempfile
 
 
-@st.cache_data(ttl=3600, max_entries=10, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def download_tiktok(url):
     querystring = {"url": url}
 
@@ -39,7 +39,7 @@ def download_tiktok(url):
         print(f"Failed to download video. Status code: {response.status_code}")
 
 
-@st.cache_data(ttl=3600, max_entries=10, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def obtain_audio(file_path):
 
     # Replace 'your_video.mp4' with the path to your video file
@@ -82,7 +82,7 @@ SPREADSHEET_ID = api_key = st.secrets["sheet_id"]
 SHEET_NAME = "Sheet2"
 
 
-@st.cache_data(ttl=3600, max_entries=10, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def load_credentials():
     data = json.loads(st.secrets["sheet_secret"])
     filename = "googlesheets_pk.json"
@@ -96,7 +96,7 @@ def load_credentials():
     return credentials
 
 
-@st.cache_data(ttl=3600, max_entries=10, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def update_sheet(locations, credentials):
     rows_to_insert = []
     for location in locations:
