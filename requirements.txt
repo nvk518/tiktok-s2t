@@ -4,3 +4,4 @@ langchain
 google-api-python-client
 google-auth
 temp
+openai
