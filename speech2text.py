@@ -128,7 +128,8 @@ def load_credentials():
 
 
 def update_sheet(dining_attractions, credentials):
-    rows_to_insert = []
+    dining_rows_to_insert = []
+    attractions_rows_to_insert = []
     for location in dining_attractions:
         split_loc = location.split(", Location: ")
         name = split_loc[0].split("Name: ")[1]
@@ -146,7 +147,6 @@ def update_sheet(dining_attractions, credentials):
                 return
             business = response.json()["businesses"]
             if business:
-                sheet = SHEET_NAME
                 first_item = business[0]
                 id = first_item["id"]
                 url = first_item["url"]
@@ -162,7 +162,7 @@ def update_sheet(dining_attractions, credentials):
                 hyperlink_maps_chip = f'=HYPERLINK("{maps_link_coords}", "{location}")'
                 hyperlink_name = f'=HYPERLINK("{url}", "{full_name}")'
 
-                rows_to_insert.append(
+                dining_rows_to_insert.append(
                     [
                         hyperlink_name,
                         hyperlink_maps_chip,
@@ -173,8 +173,7 @@ def update_sheet(dining_attractions, credentials):
                     ]
                 )
             else:
-                sheet = SHEET_NAME3
-                rows_to_insert.append([name, location, notes])
+                attractions_rows_to_insert.append([name, location, notes])
             st.info(f"Adding location: {name} - {location}")
         except ():
             st.error("Error while parsing Yelp API response.")
@@ -182,13 +181,13 @@ def update_sheet(dining_attractions, credentials):
 
     service = build("sheets", "v4", credentials=credentials)
 
-    request_body = {"values": rows_to_insert}
+    request_body = {"values": dining_rows_to_insert}
     response = (
         service.spreadsheets()
         .values()
         .append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"{sheet}!A:D",
+            range=f"{SHEET_NAME}!A:D",
             valueInputOption="USER_ENTERED",
             insertDataOption="INSERT_ROWS",
             body=request_body,
@@ -196,6 +195,19 @@ def update_sheet(dining_attractions, credentials):
         .execute()
     )
 
+    request_body = {"values": attractions_rows_to_insert}
+    response = (
+        service.spreadsheets()
+        .values()
+        .append(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"{SHEET_NAME3}!A:D",
+            valueInputOption="USER_ENTERED",
+            insertDataOption="INSERT_ROWS",
+            body=request_body,
+        )
+        .execute()
+    )
     print("Update Complete. Response:", response)
 
 
