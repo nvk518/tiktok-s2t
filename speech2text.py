@@ -73,8 +73,12 @@ def execute_gpt(text):
     print(response)
     output = response.generations[0][0].text.strip()
     locations = output.split("\n")
-    st.info(f"GPT Output: {locations}")
-    return locations
+    cleaned_locations = []
+    for loc in locations:
+        if "Name: " in loc and "Location: " in loc and "Notes/Recommendations" in loc:
+            cleaned_locations.append(loc)
+    st.info(f"GPT Output: {cleaned_locations}")
+    return cleaned_locations
 
 
 # Sheets API setup
