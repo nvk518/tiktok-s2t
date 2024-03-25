@@ -10,6 +10,10 @@ import tempfile
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 
+SPREADSHEET_ID = st.secrets["sheet_id"]
+SHEET_NAME = "Dining/Attractions"
+SHEET_NAME2 = "Tips"
+
 
 @st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def download_tiktok(url):
@@ -44,15 +48,15 @@ def obtain_audio(file_path):
 
     video_clip = VideoFileClip(file_path)
 
-    st.info("TikTok to audio conversion successful.")
+    st.success("TikTok to audio conversion successful.")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
         audio_file_path = tmpfile.name
         video_clip.audio.write_audiofile(audio_file_path)
     model = whisper.load_model("base")
     result = model.transcribe(audio_file_path)
-    # os.remove(audio_file_path)
+
     print(result["text"])
-    st.info(f"Transcription Successful: {result['text']}")
+    st.success(f"Transcription Successful: {result['text']}")
     return result["text"]
 
 
@@ -66,14 +70,6 @@ def execute_gpt(text):
     )
 
     transcribed_text = f"{text}"
-
-    # prompt = [
-    #     f"""You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in: {transcribed_text}.
-    #     Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea).
-    #     If an item is dining/attraction, give response in this strict format with 'Place Name', 'Location' and 'Notes': "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip (in 20-40 words) in this strict format: 'Tip: _, Location: _'"""
-    # ]
-
-    # response = llm.generate(prompt)
     system = """You are a travel expert specializing in Japan and Korea. Identify all restaurants/attractions/tips mentioned in the following tiktok audio transcript with city,state,country they are located in. 
     Include area of city as part of location (ie. Shibuya, Dotunburi, Itaewon, Gion, etc). If place name or city is unclear, infer using context (ie. Korean won -> Korea). If an item is dining/attraction, give response in this extremely strict format with Name, Location, and Notes: "'Name: _, Location: _, Notes: _', where 'Notes'" is any recommendations at that dining place or attraction mentioned in the transcript. If it is a tip, give summarized tip in this extremely strict format w/ Tip and Location: 'Tip: _, Location: _'. Each must be separated by a semicolon ';'. Do not lead in with anything like 'Here are the restaurants, attractions, and tips mentioned in the transcript:'. Here is an example response:
     'Name: 200-year-old spot, Location: Kyoto, Japan, Notes: Serves traditional Yuba (tofu skin) soup';'Name: Michelin guide recommended pizza place, Location: Kyoto, Japan, Notes: Serves good pizzas';'Name: Motoi, Location: Kyoto, Japan, Notes: Michelin-recommended spot for the best gyoza (dumplings)';'Tip: Visit Kyoto during cherry blossom season, Location: Kyoto, Japan';'Tip: Try fruit sandwiches and shaped ice in Japan, Location: Japan'"""
@@ -86,9 +82,10 @@ def execute_gpt(text):
             "transcribed_text": transcribed_text,
         }
     )
-    # output = response.generations[0][0].text.strip()
+
+    st.info("Model query successful.")
     output = response.content.strip()
-    st.info(f"Model ({model}) response: {output}")
+    st.info(f"Language Model ({model}) response: {output}")
     first = output.find("Name: ")
     if first == -1:
         first = output.find("Tip: ")
@@ -97,7 +94,7 @@ def execute_gpt(text):
             return
     output = output[first:]
     locations = output.split(";")
-    st.info(locations)
+
     dining_attractions = []
     tips = []
     for loc in locations:
@@ -110,11 +107,6 @@ def execute_gpt(text):
     if tips:
         st.info(f"Tips: {tips}")
     return dining_attractions, tips
-
-
-SPREADSHEET_ID = st.secrets["sheet_id"]
-SHEET_NAME = "Dining/Attractions"
-SHEET_NAME2 = "Tips"
 
 
 def load_credentials():
