@@ -55,10 +55,10 @@ def download_video(url):
         params=querystring,
     )
 
-    print(response.json())
     if setting == "tiktok":
         video_url = response.json()["video"][0]
     else:
+        st.info(response)
         st.info(response.json())
         video_url = response.json()["result"]["url"]
 
