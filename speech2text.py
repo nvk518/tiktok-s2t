@@ -53,7 +53,9 @@ def download_video(url):
     if setting == "tiktok":
         video_url = response.json()["video"][0]
     else:
+        st.info(response.json())
         video_url = response.json()["result"]["url"]
+
     response = requests.get(video_url)
 
     if response.status_code == 200:
