@@ -24,10 +24,6 @@ yelp_headers = {
 def download_video(url):
     querystring = {"url": url}
 
-    headers = {
-        "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
-        "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
-    }
     request_url = ""
     setting = ""
     if "instagram" in url:
@@ -35,13 +31,23 @@ def download_video(url):
             "https://instagram-post-reels-stories-downloader.p.rapidapi.com/instagram/"
         )
         setting = "instagram"
+        host = st.secrets["X_RapidAPI_Host_Instagram"]
     elif "tiktok" in url:
         request_url = (
             "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index",
         )
         setting = "tiktok"
+        host = st.secrets["X_RapidAPI_Host"]
     else:
+        st.error(
+            "Invalid video URL entered. Please enter either Instagram Reel or TikTok video."
+        )
         return
+
+    headers = {
+        "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
+        "X-RapidAPI-Host": host,
+    }
 
     response = requests.get(
         request_url,
@@ -265,7 +271,7 @@ def main():
         "TikTok URL --> Video download --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Yelp API --> Update Google Sheets",
     )
 
-    url = st.text_input("Enter the TikTok video URL")
+    url = st.text_input("Enter the video URL")
     credentials = load_credentials()
     if st.button("Process URL"):
         st.cache_data.clear()
