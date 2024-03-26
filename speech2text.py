@@ -41,11 +41,12 @@ def download_tiktok(url):
     response = requests.get(video_url)
 
     if response.status_code == 200:
-        with open("downloaded_video.mp4", "wb") as file:
+        with open(f"{video_url[:30]}.mp4", "wb") as file:
             file.write(response.content)
         print("Video downloaded successfully.")
     else:
         print(f"Failed to download video. Status code: {response.status_code}")
+    return f"{video_url[:30]}.mp4"
 
 
 @st.cache_data(max_entries=3, show_spinner=True, persist="disk")
@@ -252,8 +253,8 @@ def main():
     if st.button("Process URL"):
         st.cache_data.clear()
         if url:
-            download_tiktok(url)
-            text = obtain_audio("./downloaded_video.mp4")
+            save_url = download_tiktok(url)
+            text = obtain_audio(save_url)
             if text:
                 dining_attractions, tips = execute_gpt(text)
                 update_sheet_dining_attractions(dining_attractions, credentials)
