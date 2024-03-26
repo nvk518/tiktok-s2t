@@ -40,18 +40,19 @@ def download_video(url):
 
         response = requests.get(video_url)
     elif "instagram" in url:
+        url = "https://instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com/"
+
+        querystring = {"url": url}
+
         headers = {
             "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
-            "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host_Instagram"],
+            "X-RapidAPI-Host": "instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com",
         }
 
-        response = requests.get(
-            "https://instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com/",
-            headers=headers,
-            params=querystring,
-        )
+        response = requests.get(url, headers=headers, params=querystring)
 
         print(response.json())
+        st.info(response.text)
         video_url = response.json()[0]["url"]
 
         response = requests.get(video_url)
