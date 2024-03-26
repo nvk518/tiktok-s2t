@@ -35,7 +35,6 @@ def download_video(url):
             params=querystring,
         )
 
-        print(response.json())
         st.info(response.text)
         video_url = response.json()["video"][0]
 
