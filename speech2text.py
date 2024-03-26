@@ -23,23 +23,40 @@ yelp_headers = {
 @st.cache_data(max_entries=3, show_spinner=True, persist="disk")
 def download_tiktok(url):
     querystring = {"url": url}
+    if "tiktok" in url:
+        headers = {
+            "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
+            "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
+        }
 
-    headers = {
-        "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
-        "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
-    }
+        response = requests.get(
+            "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index",
+            headers=headers,
+            params=querystring,
+        )
 
-    response = requests.get(
-        "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index",
-        headers=headers,
-        params=querystring,
-    )
+        print(response.json())
+        video_url = response.json()["video"][0]
 
-    print(response.json())
-    video_url = response.json()["video"][0]
+        response = requests.get(video_url)
+    elif "instagram" in url:
+        headers = {
+            "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
+            "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host_Instagram"],
+        }
 
-    response = requests.get(video_url)
+        response = requests.get(
+            "https://instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com/",
+            headers=headers,
+            params=querystring,
+        )
 
+        print(response.json())
+        video_url = response.json()[0]["url"]
+
+        response = requests.get(video_url)
+    else:
+        st.error("Invalid video url, please enter Reel or Tiktok url.")
     if response.status_code == 200:
         with open("downloaded_video.mp4", "wb") as file:
             file.write(response.content)
