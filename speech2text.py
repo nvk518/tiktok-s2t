@@ -20,7 +20,7 @@ yelp_headers = {
 }
 
 
-@st.cache_data(max_entries=3, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def download_video(url):
     querystring = {"url": url}
     if "tiktok" in url:
@@ -36,6 +36,7 @@ def download_video(url):
         )
 
         print(response.json())
+        st.info(response.text)
         video_url = response.json()["video"][0]
 
         response = requests.get(video_url)
@@ -65,7 +66,7 @@ def download_video(url):
         print(f"Failed to download video. Status code: {response.status_code}")
 
 
-@st.cache_data(max_entries=3, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
 def obtain_audio(file_path):
 
     video_clip = VideoFileClip(file_path)
