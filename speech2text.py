@@ -20,45 +20,26 @@ yelp_headers = {
 }
 
 
-@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
-def download_video(url):
+@st.cache_data(max_entries=3, show_spinner=True, persist="disk")
+def download_tiktok(url):
     querystring = {"url": url}
-    if "tiktok" in url:
-        headers = {
-            "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
-            "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
-            "x-rapidapi-ua": "RapidAPI-Playground",
-        }
 
-        response = requests.get(
-            "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index",
-            headers=headers,
-            params=querystring,
-        )
+    headers = {
+        "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
+        "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
+    }
 
-        st.info(response.text)
-        video_url = response.json()["video"][0]
+    response = requests.get(
+        "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index",
+        headers=headers,
+        params=querystring,
+    )
 
-        response = requests.get(video_url)
-    elif "instagram" in url:
-        url = "https://instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com/"
+    print(response.json())
+    video_url = response.json()["video"][0]
 
-        querystring = {"url": url}
+    response = requests.get(video_url)
 
-        headers = {
-            "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
-            "X-RapidAPI-Host": "instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com",
-            "x-rapidapi-ua": "RapidAPI-Playground",
-        }
-
-        response = requests.get(url, headers=headers, params=querystring)
-
-        st.info(response.text)
-        video_url = response.json()[0]["url"]
-
-        response = requests.get(video_url)
-    else:
-        st.error("Invalid video url, please enter Reel or Tiktok url.")
     if response.status_code == 200:
         with open("downloaded_video.mp4", "wb") as file:
             file.write(response.content)
@@ -67,7 +48,7 @@ def download_video(url):
         print(f"Failed to download video. Status code: {response.status_code}")
 
 
-@st.cache_data(max_entries=10, show_spinner=True, persist="disk")
+@st.cache_data(max_entries=3, show_spinner=True, persist="disk")
 def obtain_audio(file_path):
 
     video_clip = VideoFileClip(file_path)
@@ -266,12 +247,12 @@ def main():
         "TikTok URL --> Video download --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Yelp API --> Update Google Sheets",
     )
 
-    url = st.text_input("Enter the video URL")
+    url = st.text_input("Enter the TikTok video URL")
     credentials = load_credentials()
     if st.button("Process URL"):
         st.cache_data.clear()
         if url:
-            download_video(url)
+            download_tiktok(url)
             text = obtain_audio("./downloaded_video.mp4")
             if text:
                 dining_attractions, tips = execute_gpt(text)
@@ -280,7 +261,6 @@ def main():
                 st.success("Processing completed.")
                 sheet_url = st.secrets["sheet_url"]
                 st.markdown("[View Google Sheet](%s)" % sheet_url)
-                st.cache_data.clear()
             else:
                 st.error("Errored while executing audio transcription.")
         else:
