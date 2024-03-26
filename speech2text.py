@@ -27,6 +27,7 @@ def download_video(url):
         headers = {
             "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
             "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
+            "x-rapidapi-ua": "RapidAPI-Playground",
         }
 
         response = requests.get(
