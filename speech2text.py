@@ -21,23 +21,39 @@ yelp_headers = {
 
 
 @st.cache_data(max_entries=3, show_spinner=True, persist="disk")
-def download_tiktok(url):
+def download_video(url):
     querystring = {"url": url}
 
     headers = {
         "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
         "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
     }
+    request_url = ""
+    setting = ""
+    if "instagram" in url:
+        request_url = (
+            "https://instagram-post-reels-stories-downloader.p.rapidapi.com/instagram/"
+        )
+        setting = "instagram"
+    elif "tiktok" in url:
+        request_url = (
+            "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index",
+        )
+        setting = "tiktok"
+    else:
+        return
 
     response = requests.get(
-        "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index",
+        request_url,
         headers=headers,
         params=querystring,
     )
 
     print(response.json())
-    video_url = response.json()["video"][0]
-
+    if setting == "tiktok":
+        video_url = response.json()["video"][0]
+    else:
+        video_url = response.json()["result"]["url"]
     response = requests.get(video_url)
 
     if response.status_code == 200:
@@ -252,7 +268,7 @@ def main():
     if st.button("Process URL"):
         st.cache_data.clear()
         if url:
-            download_tiktok(url)
+            download_video(url)
             text = obtain_audio("./downloaded_video.mp4")
             if text:
                 dining_attractions, tips = execute_gpt(text)
