@@ -47,11 +47,11 @@ def download_video(url):
         headers = {
             "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
             "X-RapidAPI-Host": "instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com",
+            "x-rapidapi-ua": "RapidAPI-Playground",
         }
 
         response = requests.get(url, headers=headers, params=querystring)
 
-        print(response.json())
         st.info(response.text)
         video_url = response.json()[0]["url"]
 
