@@ -278,6 +278,7 @@ def main():
                 st.success("Processing completed.")
                 sheet_url = st.secrets["sheet_url"]
                 st.markdown("[View Google Sheet](%s)" % sheet_url)
+                st.cache_data.clear()
             else:
                 st.error("Errored while executing audio transcription.")
         else:
