@@ -21,7 +21,7 @@ yelp_headers = {
 
 
 @st.cache_data(max_entries=3, show_spinner=True, persist="disk")
-def download_tiktok(url):
+def download_video(url):
     querystring = {"url": url}
     if "tiktok" in url:
         headers = {
@@ -264,12 +264,12 @@ def main():
         "TikTok URL --> Video download --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Yelp API --> Update Google Sheets",
     )
 
-    url = st.text_input("Enter the TikTok video URL")
+    url = st.text_input("Enter the video URL")
     credentials = load_credentials()
     if st.button("Process URL"):
         st.cache_data.clear()
         if url:
-            download_tiktok(url)
+            download_video(url)
             text = obtain_audio("./downloaded_video.mp4")
             if text:
                 dining_attractions, tips = execute_gpt(text)
