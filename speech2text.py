@@ -23,17 +23,14 @@ yelp_headers = {
 @st.cache_data(max_entries=3, show_spinner=True, persist="disk")
 def download_tiktok(url):
     querystring = {"url": url}
+    url = "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index"
 
     headers = {
         "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
         "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
     }
 
-    response = requests.get(
-        "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index",
-        headers=headers,
-        params=querystring,
-    )
+    response = requests.get(url, headers=headers, params=querystring)
 
     print(response.json())
     video_url = response.json()["video"][0]
