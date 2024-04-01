@@ -23,14 +23,14 @@ yelp_headers = {
 @st.cache_data(max_entries=3, show_spinner=True, persist="disk")
 def download_tiktok(url):
     querystring = {"url": url}
-    url = "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index"
+    url2 = "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index"
 
     headers = {
         "X-RapidAPI-Key": st.secrets["X_RapidAPI_Key"],
         "X-RapidAPI-Host": st.secrets["X_RapidAPI_Host"],
     }
 
-    response = requests.get(url, headers=headers, params=querystring)
+    response = requests.get(url2, headers=headers, params=querystring)
 
     print(response.json())
     video_url = response.json()["video"][0]
@@ -245,24 +245,22 @@ def main():
         "TikTok URL --> Video download --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Yelp API --> Update Google Sheets",
     )
 
-    url = st.text_input("Enter the TikTok video URL")
+    uploaded_file = st.file_uploader("Choose a video...", type=["mp4", "mpeg"])
+
     credentials = load_credentials()
-    if st.button("Process URL"):
+    if uploaded_file is not None:
         st.cache_data.clear()
-        if url:
-            save_url = download_tiktok(url)
-            text = obtain_audio(save_url)
-            if text:
-                dining_attractions, tips = execute_gpt(text)
-                update_sheet_dining_attractions(dining_attractions, credentials)
-                update_sheet_tips(tips, credentials)
-                st.success("Processing completed.")
-                sheet_url = st.secrets["sheet_url"]
-                st.markdown("[View Google Sheet](%s)" % sheet_url)
-            else:
-                st.error("Errored while executing audio transcription.")
+        # save_url = download_tiktok(url)
+        text = obtain_audio(uploaded_file)
+        if text:
+            dining_attractions, tips = execute_gpt(text)
+            update_sheet_dining_attractions(dining_attractions, credentials)
+            update_sheet_tips(tips, credentials)
+            st.success("Processing completed.")
+            sheet_url = st.secrets["sheet_url"]
+            st.markdown("[View Google Sheet](%s)" % sheet_url)
         else:
-            st.error("Please enter a URL.")
+            st.error("Errored while executing audio transcription.")
 
 
 if __name__ == "__main__":
