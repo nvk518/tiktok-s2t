@@ -61,7 +61,7 @@ def obtain_audio(uploaded_file):
 
     video_clip = VideoFileClip(file_path)
 
-    st.success("TikTok to audio conversion successful.")
+    st.success("Video to audio conversion successful.")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
         audio_file_path = tmpfile.name
         video_clip.audio.write_audiofile(audio_file_path)
@@ -254,9 +254,9 @@ def main():
     st.title("TripTok")
     st.header("Process Flow:", divider=True)
     st.text(
-        "TikTok URL --> Video download --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Yelp API --> Update Google Sheets",
+        "Video upload --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Yelp API --> Update Google Sheets",
     )
-
+    st.markdown("[View Google Sheet](%s)" % sheet_url)
     uploaded_file = st.file_uploader("Choose a video...", type=["mp4", "mpeg"])
 
     credentials = load_credentials()
@@ -268,9 +268,9 @@ def main():
             dining_attractions, tips = execute_gpt(text)
             update_sheet_dining_attractions(dining_attractions, credentials)
             update_sheet_tips(tips, credentials)
-            st.success("Processing completed.")
+            st.success("Processing completed. Google Sheet has been updated.")
             sheet_url = st.secrets["sheet_url"]
-            st.markdown("[View Google Sheet](%s)" % sheet_url)
+
         else:
             st.error("Errored while executing audio transcription.")
 
