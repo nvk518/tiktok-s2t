@@ -256,6 +256,8 @@ def main():
     st.text(
         "Video upload --> Audio extraction --> OpenAI Whisper audio transcription --> Claude 3 LLM text processing/summarization/categorization --> Yelp API --> Update Google Sheets",
     )
+
+    sheet_url = st.secrets["sheet_url"]
     st.markdown("[View Google Sheet](%s)" % sheet_url)
     uploaded_file = st.file_uploader("Choose a video...", type=["mp4", "mpeg"])
 
@@ -269,7 +271,6 @@ def main():
             update_sheet_dining_attractions(dining_attractions, credentials)
             update_sheet_tips(tips, credentials)
             st.success("Processing completed. Google Sheet has been updated.")
-            sheet_url = st.secrets["sheet_url"]
 
         else:
             st.error("Errored while executing audio transcription.")
