@@ -47,7 +47,15 @@ def download_tiktok(url):
 
 
 @st.cache_data(max_entries=3, show_spinner=True, persist="disk")
-def obtain_audio(file_path):
+def obtain_audio(uploaded_file):
+
+    # Create a temporary file to save the uploaded video file
+    with tempfile.NamedTemporaryFile(
+        delete=False, suffix=uploaded_file.name[uploaded_file.name.rfind(".") :]
+    ) as tmpfile:
+        # Write the contents of the uploaded file to the temporary file
+        tmpfile.write(uploaded_file.getvalue())
+        file_path = tmpfile.name
 
     video_clip = VideoFileClip(file_path)
 
@@ -55,6 +63,7 @@ def obtain_audio(file_path):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
         audio_file_path = tmpfile.name
         video_clip.audio.write_audiofile(audio_file_path)
+
     model = whisper.load_model("base")
     result = model.transcribe(audio_file_path)
 
