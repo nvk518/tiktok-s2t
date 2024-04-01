@@ -10,6 +10,8 @@ import tempfile
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from urllib.parse import quote
+from datetime import datetime
+import pytz
 
 SPREADSHEET_ID = st.secrets["sheet_id"]
 SHEET_NAME = "Dining/Attractions"
@@ -159,6 +161,9 @@ def request_yelp_api(name, location, notes):
         hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
         hyperlink_name = f'=HYPERLINK("{url}", "{full_name}")'
 
+        current_utc_time = datetime.now(pytz.utc)
+        clean_format_time = current_utc_time.strftime("%Y-%m-%d %H:%M:%S %Z")
+
         rows_to_insert = [
             hyperlink_name,
             hyperlink_map,
@@ -166,19 +171,17 @@ def request_yelp_api(name, location, notes):
             rating,
             review_count,
             notes,
+            clean_format_time,
         ]
 
     else:
         maps_link_coords = f"https://www.google.com/maps/?q={encoded_location}"
         hyperlink_map = f'=HYPERLINK("{maps_link_coords}", "{location}")'
-        rows_to_insert = [
-            name,
-            hyperlink_map,
-            "",
-            "",
-            "",
-            notes,
-        ]
+
+        current_utc_time = datetime.now(pytz.utc)
+        clean_format_time = current_utc_time.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+        rows_to_insert = [name, hyperlink_map, "", "", "", notes, clean_format_time]
 
     return rows_to_insert
 
